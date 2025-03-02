@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "443484449237",
+    "project_id": "flushpoint-aa8d2",
+    "storage_bucket": "flushpoint-aa8d2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:443484449237:android:f636a9de31ec73fe44355c",
+        "android_client_info": {
+          "package_name": "com.example.flutter_setup"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "443484449237-gddl66eadarnpfobj615h2sjq7mtd1ak.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwRk2QMnfWRIwUORYeRnzlrE6JJ8ajaNk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "443484449237-gddl66eadarnpfobj615h2sjq7mtd1ak.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "443484449237-tc14557vhl6qfimpmncdvpj7o20s794i.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.flutterSetup"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
