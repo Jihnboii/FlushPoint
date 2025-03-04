@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart'; // For Google Maps
+import 'toilet_details.dart'; // Import ToiletDetails
+import 'add_toilet.dart'; // Import AddToilet
+import 'favorites_list.dart'; // Import FavoritesList
+import 'profile_page.dart'; // Import ProfilePage
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,7 +73,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 IconButton(
                   icon: const Icon(Icons.add),
                   onPressed: () {
-                    // Handle + button click
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddToilet(),
+                      ),
+                    );
                   },
                 ),
               ],
@@ -100,7 +109,16 @@ class _MyHomePageState extends State<MyHomePage> {
                   subtitle: Text('Business Name\nAddress: 123 Location St'),
                   leading: const Icon(Icons.wc),
                   onTap: () {
-                    // Handle toilet selection
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ToiletDetails(
+                          businessName: 'Business Name ${index + 1}',
+                          address: '123 Location St',
+                          location: _initialCameraPosition,
+                        ),
+                      ),
+                    );
                   },
                 );
               },
@@ -125,7 +143,28 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         ],
         onTap: (index) {
-          // Handle bottom navigation bar tap
+          if (index == 0) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MyHomePage(title: 'FlushPoint'),
+              ),
+            );
+          } else if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const FavoritesList(),
+              ),
+            );
+          } else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProfilePage(),
+              ),
+            );
+          }
         },
       ),
     );
