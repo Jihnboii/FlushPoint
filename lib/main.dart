@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart'; // For Google Maps
-import 'toilet_details.dart'; // Import ToiletDetails
-import 'add_toilet.dart'; // Import AddToilet
-import 'favorites_list.dart'; // Import FavoritesList
-import 'profile_page.dart'; // Import ProfilePage
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'location_service.dart';
+import 'toilet_details.dart';
+import 'add_toilet.dart';
+import 'favorites_list.dart';
+import 'profile_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,9 +40,52 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // Map controller
   late GoogleMapController _mapController;
-  final LatLng _initialCameraPosition = const LatLng(37.7749, -122.4194); // San Francisco coords
+  final LatLng _initialCameraPosition = const LatLng(37.7749, -122.4194); // San Francisco
+  LatLng? _currentPosition;
+  final List<Marker> _markers = [];
+
+  List<Map<String, dynamic>> _toilets = [];
+
+  @override
+  void initState() {
+    super.initState();
+    requestLocationPermission();
+    _setCurrentLocation();
+  }
+
+  Future<void> _setCurrentLocation() async {
+    Position position = await getCurrentLocation();
+    setState(() {
+      _currentPosition = LatLng(position.latitude, position.longitude);
+    });
+    _mapController.animateCamera(CameraUpdate.newLatLng(_currentPosition!));
+  }
+
+  void _addToilet(Map<String, dynamic> newToilet) {
+    setState(() {
+      _toilets.add(newToilet);
+      _setMarkers();
+    });
+  }
+
+  void _setMarkers() {
+    setState(() {
+      _markers.clear();
+      for (var toilet in _toilets) {
+        _markers.add(
+          Marker(
+            markerId: MarkerId(toilet['name']),
+            position: toilet['location'],
+            infoWindow: InfoWindow(
+              title: toilet['name'],
+              snippet: toilet['address'],
+            ),
+          ),
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +104,11 @@ class _MyHomePageState extends State<MyHomePage> {
                 IconButton(
                   icon: const Icon(Icons.location_pin),
                   onPressed: () {
-                    // Handle location pin click
+                    if (_currentPosition != null) {
+                      _mapController.animateCamera(
+                        CameraUpdate.newLatLng(_currentPosition!),
+                      );
+                    }
                   },
                 ),
                 Expanded(
@@ -76,7 +125,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const AddToilet(),
+                        builder: (context) => AddToilet(onToiletAdded: _addToilet),
                       ),
                     );
                   },
@@ -96,29 +145,37 @@ class _MyHomePageState extends State<MyHomePage> {
               onMapCreated: (controller) {
                 _mapController = controller;
               },
+              markers: Set<Marker>.of(_markers),
             ),
           ),
 
-          // List of toilets (placeholders for now)
+          // List of toilets
           Expanded(
             child: ListView.builder(
-              itemCount: 5, // Placeholder for 5 toilets
+              itemCount: _toilets.length,
               itemBuilder: (context, index) {
+                var toilet = _toilets[index];
                 return ListTile(
-                  title: Text('Toilet ${index + 1}'),
-                  subtitle: Text('Business Name\nAddress: 123 Location St'),
+                  title: Text(toilet['name']),
+                  subtitle: Text(toilet['address']),
                   leading: const Icon(Icons.wc),
                   onTap: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => ToiletDetails(
-                          businessName: 'Business Name ${index + 1}',
-                          address: '123 Location St',
-                          location: _initialCameraPosition,
+                          businessName: toilet['name'],
+                          address: toilet['address'],
+                          location: toilet['location'],
+                          cleanliness: toilet['cleanliness'],
+                          facilities: toilet['facilities'],
+                          requiresKey: toilet['requiresKey'],
+                          requiresPurchase: toilet['requiresPurchase'],
+                          notes: toilet['notes'],
                         ),
                       ),
                     );
+
                   },
                 );
               },

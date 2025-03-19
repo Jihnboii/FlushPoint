@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 
 import 'favorites_list.dart';
 import 'main.dart';
+import 'login.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final User? user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -18,12 +22,12 @@ class ProfilePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'User Name',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            Text(
+              user?.displayName ?? 'User Name',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text('user@example.com'),
+            Text(user?.email ?? 'user@example.com'),
             ListTile(
               title: const Text('Settings'),
               onTap: () {
@@ -50,7 +54,11 @@ class ProfilePage extends StatelessWidget {
               ),
               onTap: () async {
                 await FirebaseAuth.instance.signOut();
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                      (route) => false,
+                );
               },
             ),
           ],
