@@ -1,69 +1,49 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_setup/profile_page.dart';
-
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'main.dart';
+import 'toilet_details.dart';
 
 class FavoritesList extends StatelessWidget {
-  const FavoritesList({Key? key}) : super(key: key);
+  final List<Map<String, dynamic>> favoritedToilets;
+
+  const FavoritesList({Key? key, required this.favoritedToilets}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Favorited Toilets'),
-      ),
-      body: ListView.builder(
-        itemCount: 5, // Placeholder for 5 favorited toilets
+      appBar: AppBar(title: const Text('Favorited Toilets')),
+      body: favoritedToilets.isEmpty
+          ? const Center(child: Text("No favorite toilets yet."))
+          : ListView.builder(
+        itemCount: favoritedToilets.length,
         itemBuilder: (context, index) {
+          var toilet = favoritedToilets[index];
+
           return ListTile(
-            title: Text('Favorited Toilet ${index + 1}'),
-            subtitle: Text('Business Name\nAddress: 123 Location St'),
-            leading: const Icon(Icons.favorite),
-            onTap: () {
-              // Handle tap on favorited toilet
-            },
+            title: Text(toilet['name']),
+            subtitle: Text(toilet['address']),
+            leading: const Icon(Icons.favorite, color: Colors.red),
+            trailing: IconButton(
+              icon: const Icon(Icons.info_outline),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ToiletDetails(
+                      businessName: toilet['name'],
+                      address: toilet['address'],
+                      location: LatLng(toilet['location'].latitude, toilet['location'].longitude),
+                      cleanliness: toilet['cleanliness'],
+                      accessibility: toilet['accessibility'],
+                      requiresKey: toilet['requiresKey'],
+                      requiresPurchase: toilet['requiresPurchase'],
+                      notes: toilet['notes'],
+                    ),
+                  ),
+                );
+              },
+            ),
           );
-        },
-      ),
-      // Bottom menu
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.list),
-            label: 'List',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Profile',
-          ),
-        ],
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const MyHomePage(title: 'FlushPoint'),
-              ),
-            );
-          } else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const FavoritesList(),
-              ),
-            );
-          } else if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ProfilePage(),
-              ),
-            );
-          }
         },
       ),
     );

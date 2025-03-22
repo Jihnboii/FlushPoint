@@ -7,6 +7,7 @@ import 'toilet_details.dart';
 import 'add_toilet.dart';
 import 'favorites_list.dart';
 import 'profile_page.dart';
+import 'firestore_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,13 +46,23 @@ class _MyHomePageState extends State<MyHomePage> {
   LatLng? _currentPosition;
   final List<Marker> _markers = [];
 
+  final FirestoreService _firestoreService = FirestoreService();
   List<Map<String, dynamic>> _toilets = [];
+  Set<String> _favoriteToilets = {}; // Stores IDs of favorited toilets
 
   @override
   void initState() {
     super.initState();
     requestLocationPermission();
     _setCurrentLocation();
+
+    // Fetch toilets from Firestore when the app starts
+    _firestoreService.getToilets().listen((toilets) {
+      setState(() {
+        _toilets = toilets;
+        _setMarkers();
+      });
+    });
   }
 
   Future<void> _setCurrentLocation() async {
@@ -62,10 +73,13 @@ class _MyHomePageState extends State<MyHomePage> {
     _mapController.animateCamera(CameraUpdate.newLatLng(_currentPosition!));
   }
 
-  void _addToilet(Map<String, dynamic> newToilet) {
+  void _toggleFavorite(String toiletId) {
     setState(() {
-      _toilets.add(newToilet);
-      _setMarkers();
+      if (_favoriteToilets.contains(toiletId)) {
+        _favoriteToilets.remove(toiletId);
+      } else {
+        _favoriteToilets.add(toiletId);
+      }
     });
   }
 
@@ -76,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
         _markers.add(
           Marker(
             markerId: MarkerId(toilet['name']),
-            position: toilet['location'],
+            position: LatLng(toilet['location'].latitude, toilet['location'].longitude),
             infoWindow: InfoWindow(
               title: toilet['name'],
               snippet: toilet['address'],
@@ -125,7 +139,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => AddToilet(onToiletAdded: _addToilet),
+                        builder: (context) => const AddToilet(),
                       ),
                     );
                   },
@@ -155,28 +169,49 @@ class _MyHomePageState extends State<MyHomePage> {
               itemCount: _toilets.length,
               itemBuilder: (context, index) {
                 var toilet = _toilets[index];
+                String toiletId = toilet['id'];
+                LatLng toiletLocation = LatLng(toilet['location'].latitude, toilet['location'].longitude);
+                bool isFavorited = _favoriteToilets.contains(toiletId);
+
                 return ListTile(
                   title: Text(toilet['name']),
                   subtitle: Text(toilet['address']),
-                  leading: const Icon(Icons.wc),
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ToiletDetails(
-                          businessName: toilet['name'],
-                          address: toilet['address'],
-                          location: toilet['location'],
-                          cleanliness: toilet['cleanliness'],
-                          facilities: toilet['facilities'],
-                          requiresKey: toilet['requiresKey'],
-                          requiresPurchase: toilet['requiresPurchase'],
-                          notes: toilet['notes'],
-                        ),
-                      ),
-                    );
-
+                    // Move the map to center on the toilet's location
+                    _mapController.animateCamera(CameraUpdate.newLatLng(toiletLocation));
                   },
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min, // Prevents row from taking full width
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          isFavorited ? Icons.favorite : Icons.favorite_border,
+                          color: Colors.red,
+                        ),
+                        onPressed: () => _toggleFavorite(toiletId),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.info_outline),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ToiletDetails(
+                                businessName: toilet['name'],
+                                address: toilet['address'],
+                                location: toiletLocation,
+                                cleanliness: toilet['cleanliness'],
+                                accessibility: toilet['accessibility'], // Changed from facilities
+                                requiresKey: toilet['requiresKey'],
+                                requiresPurchase: toilet['requiresPurchase'],
+                                notes: toilet['notes'],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 );
               },
             ),
@@ -211,7 +246,9 @@ class _MyHomePageState extends State<MyHomePage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const FavoritesList(),
+                builder: (context) => FavoritesList(
+                  favoritedToilets: _toilets.where((toilet) => _favoriteToilets.contains(toilet['id'])).toList(),
+                ),
               ),
             );
           } else if (index == 2) {

@@ -92,7 +92,7 @@ class ProfilePage extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => const FavoritesList(),
+                builder: (context) => const FavoritesList(favoritedToilets: [],),
               ),
             );
           } else if (index == 2) {

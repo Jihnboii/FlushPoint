@@ -6,7 +6,7 @@ class ToiletDetails extends StatelessWidget {
   final String address;
   final LatLng location;
   final int cleanliness;
-  final int facilities;
+  final int accessibility;
   final bool requiresKey;
   final bool requiresPurchase;
   final String notes;
@@ -17,7 +17,7 @@ class ToiletDetails extends StatelessWidget {
     required this.address,
     required this.location,
     required this.cleanliness,
-    required this.facilities,
+    required this.accessibility,
     required this.requiresKey,
     required this.requiresPurchase,
     required this.notes,
@@ -67,7 +67,7 @@ class ToiletDetails extends StatelessWidget {
               const SizedBox(height: 12),
               _buildRatingRow("Cleanliness:", cleanliness),
               const SizedBox(height: 8),
-              _buildRatingRow("Facilities:", facilities),
+              _buildRatingRow("Accessibility:", accessibility),
               const SizedBox(height: 8),
               _buildCheckboxRow("Requires Key:", requiresKey),
               _buildCheckboxRow("Requires Purchase:", requiresPurchase),

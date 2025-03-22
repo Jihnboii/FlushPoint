@@ -1,26 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'firestore_service.dart';
 
 class AddToilet extends StatefulWidget {
-  final Function(Map<String, dynamic>) onToiletAdded; // Callback function
-
-  const AddToilet({Key? key, required this.onToiletAdded}) : super(key: key);
+  const AddToilet({Key? key}) : super(key: key);
 
   @override
   _AddToiletState createState() => _AddToiletState();
 }
 
 class _AddToiletState extends State<AddToilet> {
+  final FirestoreService _firestoreService = FirestoreService();
+
   final TextEditingController _businessNameController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
   LatLng? _location;
   int _cleanlinessRating = 0;
-  int _facilitiesRating = 0;
+  int _accessibilityRating = 0;
   bool _requiresKey = false;
   bool _requiresPurchase = false;
+  bool _isSaving = false; // Prevent duplicate submissions
 
   Future<void> _getCoordinatesFromAddress(String address) async {
     try {
@@ -32,10 +35,13 @@ class _AddToiletState extends State<AddToilet> {
       }
     } catch (e) {
       print('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Invalid address. Try again.")),
+      );
     }
   }
 
-  void _submitToilet() {
+  Future<void> _submitToilet() async {
     if (_businessNameController.text.isEmpty || _location == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please enter a valid name and location")),
@@ -43,21 +49,37 @@ class _AddToiletState extends State<AddToilet> {
       return;
     }
 
-    // Create toilet entry
+    setState(() {
+      _isSaving = true;
+    });
+
+    // Convert `LatLng` to Firestore's `GeoPoint`
     final newToilet = {
       'name': _businessNameController.text,
       'address': _addressController.text,
-      'location': _location!,
+      'location': GeoPoint(_location!.latitude, _location!.longitude),
       'cleanliness': _cleanlinessRating,
-      'facilities': _facilitiesRating,
+      'accessibility': _accessibilityRating,
       'requiresKey': _requiresKey,
       'requiresPurchase': _requiresPurchase,
       'notes': _notesController.text,
     };
 
-    // Pass the new toilet back to main.dart
-    widget.onToiletAdded(newToilet);
-    Navigator.pop(context);
+    try {
+      await _firestoreService.addToilet(newToilet);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Toilet added successfully!")),
+      );
+      Navigator.pop(context); // Close the page after adding
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error saving toilet: $e")),
+      );
+    } finally {
+      setState(() {
+        _isSaving = false;
+      });
+    }
   }
 
   @override
@@ -111,16 +133,15 @@ class _AddToiletState extends State<AddToilet> {
                 });
               }, _cleanlinessRating),
               const SizedBox(height: 8),
-              _buildRatingSection('Facilities:', (rating) {
+              _buildRatingSection('Accessibility:', (rating) {
                 setState(() {
-                  _facilitiesRating = rating;
+                  _accessibilityRating = rating;
                 });
-              }, _facilitiesRating),
+              }, _accessibilityRating),
               const SizedBox(height: 8),
               Row(
                 children: [
                   const Text('Requires Key:'),
-                  const SizedBox(width: 8),
                   Checkbox(
                     value: _requiresKey,
                     onChanged: (bool? value) {
@@ -134,7 +155,6 @@ class _AddToiletState extends State<AddToilet> {
               Row(
                 children: [
                   const Text('Requires Purchase:'),
-                  const SizedBox(width: 8),
                   Checkbox(
                     value: _requiresPurchase,
                     onChanged: (bool? value) {
@@ -156,8 +176,10 @@ class _AddToiletState extends State<AddToilet> {
               ),
               const SizedBox(height: 8),
               ElevatedButton(
-                onPressed: _submitToilet,
-                child: const Text("Add Toilet"),
+                onPressed: _isSaving ? null : _submitToilet,
+                child: _isSaving
+                    ? const CircularProgressIndicator()
+                    : const Text("Add Toilet"),
               ),
             ],
           ),
