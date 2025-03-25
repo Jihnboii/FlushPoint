@@ -48,7 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   final FirestoreService _firestoreService = FirestoreService();
   List<Map<String, dynamic>> _toilets = [];
-  Set<String> _favoriteToilets = {}; // Stores IDs of favorited toilets
+  List<Map<String, dynamic>> _favoriteToilets = []; // Store favorite toilets
 
   @override
   void initState() {
@@ -56,11 +56,18 @@ class _MyHomePageState extends State<MyHomePage> {
     requestLocationPermission();
     _setCurrentLocation();
 
-    // Fetch toilets from Firestore when the app starts
+    // Fetch toilets from Firestore
     _firestoreService.getToilets().listen((toilets) {
       setState(() {
         _toilets = toilets;
         _setMarkers();
+      });
+    });
+
+    // Fetch user's favorite toilets
+    _firestoreService.getUserFavorites().listen((favorites) {
+      setState(() {
+        _favoriteToilets = favorites;
       });
     });
   }
@@ -73,14 +80,8 @@ class _MyHomePageState extends State<MyHomePage> {
     _mapController.animateCamera(CameraUpdate.newLatLng(_currentPosition!));
   }
 
-  void _toggleFavorite(String toiletId) {
-    setState(() {
-      if (_favoriteToilets.contains(toiletId)) {
-        _favoriteToilets.remove(toiletId);
-      } else {
-        _favoriteToilets.add(toiletId);
-      }
-    });
+  void _toggleFavorite(String toiletId, Map<String, dynamic> toiletData) {
+    _firestoreService.toggleFavorite(toiletId, toiletData);
   }
 
   void _setMarkers() {
@@ -171,24 +172,23 @@ class _MyHomePageState extends State<MyHomePage> {
                 var toilet = _toilets[index];
                 String toiletId = toilet['id'];
                 LatLng toiletLocation = LatLng(toilet['location'].latitude, toilet['location'].longitude);
-                bool isFavorited = _favoriteToilets.contains(toiletId);
+                bool isFavorited = _favoriteToilets.any((fav) => fav['id'] == toiletId);
 
                 return ListTile(
                   title: Text(toilet['name']),
                   subtitle: Text(toilet['address']),
                   onTap: () {
-                    // Move the map to center on the toilet's location
                     _mapController.animateCamera(CameraUpdate.newLatLng(toiletLocation));
                   },
                   trailing: Row(
-                    mainAxisSize: MainAxisSize.min, // Prevents row from taking full width
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: Icon(
                           isFavorited ? Icons.favorite : Icons.favorite_border,
                           color: Colors.red,
                         ),
-                        onPressed: () => _toggleFavorite(toiletId),
+                        onPressed: () => _toggleFavorite(toiletId, toilet),
                       ),
                       IconButton(
                         icon: const Icon(Icons.info_outline),
@@ -201,7 +201,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 address: toilet['address'],
                                 location: toiletLocation,
                                 cleanliness: toilet['cleanliness'],
-                                accessibility: toilet['accessibility'], // Changed from facilities
+                                accessibility: toilet['accessibility'],
                                 requiresKey: toilet['requiresKey'],
                                 requiresPurchase: toilet['requiresPurchase'],
                                 notes: toilet['notes'],
@@ -238,25 +238,19 @@ class _MyHomePageState extends State<MyHomePage> {
           if (index == 0) {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const MyHomePage(title: 'FlushPoint'),
-              ),
+              MaterialPageRoute(builder: (context) => const MyHomePage(title: 'FlushPoint')),
             );
           } else if (index == 1) {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => FavoritesList(
-                  favoritedToilets: _toilets.where((toilet) => _favoriteToilets.contains(toilet['id'])).toList(),
-                ),
+                builder: (context) => const FavoritesList(),
               ),
             );
           } else if (index == 2) {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const ProfilePage(),
-              ),
+              MaterialPageRoute(builder: (context) => const ProfilePage()),
             );
           }
         },
@@ -264,3 +258,4 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+
