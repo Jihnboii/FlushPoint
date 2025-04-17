@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'favorites_list.dart';
 import 'main.dart';
@@ -36,8 +37,14 @@ class ProfilePage extends StatelessWidget {
             ),
             ListTile(
               title: const Text('About Us'),
-              onTap: () {
-                // Handle about us tap
+              onTap: () async {
+                final Uri url = Uri.parse('https://github.com/Jihnboii/FlushPoint/blob/master/README.md');
+
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication); // ✅ Opens in browser
+                } else {
+                  throw 'Could not launch $url';
+                }
               },
             ),
             ListTile(
