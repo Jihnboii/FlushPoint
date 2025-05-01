@@ -33,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
       await FirebaseAuth.instance.signInWithCredential(credential);
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MyHomePage(title: 'CS4750 Mobile Demo')),
+        MaterialPageRoute(builder: (context) => const MyHomePage(title: 'FlushPoint')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -50,13 +50,20 @@ class _LoginPageState extends State<LoginPage> {
       );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MyHomePage(title: 'CS4750 Mobile Demo')),
+        MaterialPageRoute(builder: (context) => const MyHomePage(title: 'FlushPoint')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Email login failed: $e')),
       );
     }
+  }
+
+  void _continueAsGuest(BuildContext context) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const MyHomePage(title: 'FlushPoint')),
+    );
   }
 
   @override
@@ -80,6 +87,8 @@ class _LoginPageState extends State<LoginPage> {
             LoginButton(onPressed: () => _signInWithEmailPassword(context), text: 'Login'),
             const SizedBox(height: 10),
             GoogleLoginButton(onPressed: () => _signInWithGoogle(context)),
+            const SizedBox(height: 10),
+            ContinueAsGuestButton(onPressed: () => _continueAsGuest(context)),
             const SizedBox(height: 10),
             const SignUpButton(),
           ],
@@ -199,6 +208,23 @@ class GoogleLoginButton extends StatelessWidget {
       child: OutlinedButton(
         onPressed: onPressed,
         child: const Text('Login with Google'),
+      ),
+    );
+  }
+}
+
+class ContinueAsGuestButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const ContinueAsGuestButton({super.key, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: TextButton(
+        onPressed: onPressed,
+        child: const Text("Continue as Guest"),
       ),
     );
   }

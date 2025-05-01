@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'favorites_list.dart';
 import 'main.dart';
 import 'login.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -12,6 +11,7 @@ class ProfilePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final User? user = FirebaseAuth.instance.currentUser;
+    final bool isGuest = user == null;
 
     return Scaffold(
       appBar: AppBar(
@@ -23,48 +23,60 @@ class ProfilePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              user?.displayName ?? 'User Name',
+              isGuest ? 'Guest User' : user?.displayName ?? 'User Name',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(user?.email ?? 'user@example.com'),
+            Text(isGuest ? 'No email' : user?.email ?? 'user@example.com'),
+            const SizedBox(height: 16),
             ListTile(
               title: const Text('Settings'),
               onTap: () {
-                // Handle settings tap
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Settings not available yet')),
+                );
               },
             ),
             ListTile(
               title: const Text('About Us'),
               onTap: () {
-                // Handle about us tap
+                showAboutDialog(
+                  context: context,
+                  applicationName: 'FlushPoint',
+                  applicationVersion: '1.0.0',
+                  children: const [
+                    Text('FlushPoint helps you find and share public restrooms.'),
+                  ],
+                );
               },
             ),
             ListTile(
               title: const Text('Feedback'),
               onTap: () {
-                // Handle feedback tap
-              },
-            ),
-            const Spacer(),
-            ListTile(
-              title: const Text(
-                'Log Out',
-                style: TextStyle(color: Colors.red),
-              ),
-              onTap: () async {
-                await FirebaseAuth.instance.signOut();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                      (route) => false,
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Feedback form coming soon')),
                 );
               },
             ),
+            const Spacer(),
+            if (!isGuest)
+              ListTile(
+                title: const Text(
+                  'Log Out',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () async {
+                  await FirebaseAuth.instance.signOut();
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                        (route) => false,
+                  );
+                },
+              ),
           ],
         ),
       ),
-      // Bottom menu
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(

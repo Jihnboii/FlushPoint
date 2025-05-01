@@ -7,12 +7,36 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:443484449237:android:f636a9de31ec73fe44355c",
+        "mobilesdk_app_id": "1:443484449237:android:6676198cc174662144355c",
         "android_client_info": {
-          "package_name": "com.example.flutter_setup"
+          "package_name": "com.jonarod.flushpoint"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "443484449237-5jrte8ah2dm6ac06rgdm4vbcimbg93kp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jonarod.flushpoint",
+            "certificate_hash": "5250d99dad00a2aef35a9500c37fcb8d7474a2ff"
+          }
+        },
+        {
+          "client_id": "443484449237-94g2t8d23osifbebufb0joruh7a3s9re.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jonarod.flushpoint",
+            "certificate_hash": "44184de6af4303aa484f17b922e14d9f81ac00ed"
+          }
+        },
+        {
+          "client_id": "443484449237-hvnh7rb1omfvovbjoehlclvimcftemii.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.jonarod.flushpoint",
+            "certificate_hash": "061550f960ea8d8ed52275c37b8876618e565bec"
+          }
+        },
         {
           "client_id": "443484449237-gddl66eadarnpfobj615h2sjq7mtd1ak.apps.googleusercontent.com",
           "client_type": 3

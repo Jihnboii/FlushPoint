@@ -1,4 +1,4 @@
-package com.example.flutter_setup
+package com.jonarod.flushpoint
 
 import io.flutter.embedding.android.FlutterActivity
 

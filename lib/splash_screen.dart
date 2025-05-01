@@ -22,7 +22,7 @@ class _SplashPageState extends State<SplashPage> {
       if (user != null) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MyHomePage(title: 'CS4750 Mobile Demo')),
+          MaterialPageRoute(builder: (context) => const MyHomePage(title: 'FlushPoint')),
         );
       } else {
         Navigator.pushReplacement(
