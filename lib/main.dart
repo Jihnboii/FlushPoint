@@ -9,10 +9,13 @@ import 'favorites_list.dart';
 import 'profile_page.dart';
 import 'firestore_service.dart';
 import 'splash_screen.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const MyApp());
 }
@@ -84,11 +87,13 @@ class _MyHomePageState extends State<MyHomePage> {
   final LatLng _initialCameraPosition = const LatLng(37.7749, -122.4194); // San Francisco
   LatLng? _currentPosition;
   final List<Marker> _markers = [];
+  
+  // Keep track of the current page index
+  int _currentPageIndex = 0;
 
   final FirestoreService _firestoreService = FirestoreService();
   List<Map<String, dynamic>> _toilets = [];
   List<Map<String, dynamic>> _favoriteToilets = []; // Store favorite toilets
-  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -117,7 +122,9 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _currentPosition = LatLng(position.latitude, position.longitude);
     });
-    _mapController.animateCamera(CameraUpdate.newLatLng(_currentPosition!));
+    if (_mapController != null && _currentPosition != null) {
+      _mapController.animateCamera(CameraUpdate.newLatLng(_currentPosition!));
+    }
   }
 
   void _toggleFavorite(String toiletId, Map<String, dynamic> toiletData) {
@@ -142,6 +149,295 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // Build different pages based on bottom navigation selection
+  Widget _buildPage(int index) {
+    switch (index) {
+      case 0:
+        return _buildHomePage();
+      case 1:
+        return const FavoritesList();
+      case 2:
+        return const ProfilePage();
+      default:
+        return _buildHomePage();
+    }
+  }
+
+  Widget _buildHomePage() {
+    return Column(
+      children: <Widget>[
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.my_location,
+                      color: Colors.purple.shade400,
+                    ),
+                    onPressed: () {
+                      if (_currentPosition != null) {
+                        _mapController.animateCamera(
+                          CameraUpdate.newLatLng(_currentPosition!),
+                        );
+                      }
+                    },
+                  ),
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search for toilets...',
+                        border: InputBorder.none,
+                        hintStyle: TextStyle(color: Colors.grey.shade500),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade400,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AddToilet(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Google Maps view
+        Container(
+          height: 280,
+          margin: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3),
+                spreadRadius: 2,
+                blurRadius: 5,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: GoogleMap(
+              initialCameraPosition: CameraPosition(
+                target: _initialCameraPosition,
+                zoom: 14,
+              ),
+              onMapCreated: (controller) {
+                _mapController = controller;
+                if (_currentPosition != null) {
+                  _mapController.animateCamera(
+                    CameraUpdate.newLatLng(_currentPosition!),
+                  );
+                }
+              },
+              markers: Set<Marker>.of(_markers),
+            ),
+          ),
+        ),
+
+        // Section Title
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+          child: Row(
+            children: [
+              Text(
+                'Nearby Toilets',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.purple.shade800,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                height: 2,
+                width: 40,
+                color: Colors.purple.shade300,
+              ),
+            ],
+          ),
+        ),
+
+        // List of toilets
+        Expanded(
+          child: _toilets.isEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 48,
+                        color: Colors.purple.shade300,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "No toilets found nearby",
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.purple.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: _toilets.length,
+                  itemBuilder: (context, index) {
+                    var toilet = _toilets[index];
+                    String toiletId = toilet['id'];
+                    LatLng toiletLocation = LatLng(toilet['location'].latitude, toilet['location'].longitude);
+                    bool isFavorited = _favoriteToilets.any((fav) => fav['id'] == toiletId);
+
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () {
+                          _mapController.animateCamera(CameraUpdate.newLatLng(toiletLocation));
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: Colors.purple.shade100,
+                                radius: 24,
+                                child: Icon(
+                                  Icons.wc,
+                                  color: Colors.purple.shade700,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      toilet['name'],
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.purple.shade800,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_on,
+                                          size: 14,
+                                          color: Colors.purple.shade400,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            toilet['address'],
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: 14,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: List.generate(5, (starIndex) {
+                                        return Icon(
+                                          starIndex < toilet['cleanliness'] ? Icons.star : Icons.star_border,
+                                          color: Colors.amber.shade600,
+                                          size: 16,
+                                        );
+                                      }),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                children: [
+                                  IconButton(
+                                    icon: Icon(
+                                      isFavorited ? Icons.favorite : Icons.favorite_border,
+                                      color: Colors.red.shade400,
+                                    ),
+                                    onPressed: () => _toggleFavorite(toiletId, toilet),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.info_outline,
+                                      color: Colors.purple.shade400,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ToiletDetails(
+                                            businessName: toilet['name'],
+                                            address: toilet['address'],
+                                            location: toiletLocation,
+                                            cleanliness: toilet['cleanliness'],
+                                            accessibility: toilet['accessibility'],
+                                            requiresKey: toilet['requiresKey'],
+                                            requiresPurchase: toilet['requiresPurchase'],
+                                            notes: toilet['notes'],
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -150,290 +446,20 @@ class _MyHomePageState extends State<MyHomePage> {
           widget.title,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        actions: [
+        actions: _currentPageIndex == 0 ? [
           IconButton(
             icon: const Icon(Icons.favorite),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const FavoritesList(),
-                ),
-              );
+              setState(() {
+                _currentPageIndex = 1; // Switch to favorites page
+              });
             },
           ),
-        ],
+        ] : null,
       ),
-      body: Column(
-        children: <Widget>[
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
-                    spreadRadius: 1,
-                    blurRadius: 3,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.my_location,
-                        color: Colors.purple.shade400,
-                      ),
-                      onPressed: () {
-                        if (_currentPosition != null) {
-                          _mapController.animateCamera(
-                            CameraUpdate.newLatLng(_currentPosition!),
-                          );
-                        }
-                      },
-                    ),
-                    Expanded(
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: 'Search for toilets...',
-                          border: InputBorder.none,
-                          hintStyle: TextStyle(color: Colors.grey.shade500),
-                        ),
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.purple.shade400,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.add, color: Colors.white),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AddToilet(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          // Google Maps view
-          Container(
-            height: 280,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.3),
-                  spreadRadius: 2,
-                  blurRadius: 5,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: _initialCameraPosition,
-                  zoom: 14,
-                ),
-                onMapCreated: (controller) {
-                  _mapController = controller;
-                },
-                markers: Set<Marker>.of(_markers),
-              ),
-            ),
-          ),
-
-          // Section Title
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Row(
-              children: [
-                Text(
-                  'Nearby Toilets',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.purple.shade800,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  height: 2,
-                  width: 40,
-                  color: Colors.purple.shade300,
-                ),
-              ],
-            ),
-          ),
-
-          // List of toilets
-          Expanded(
-            child: _toilets.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 48,
-                          color: Colors.purple.shade300,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "No toilets found nearby",
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.purple.shade800,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(8),
-                    itemCount: _toilets.length,
-                    itemBuilder: (context, index) {
-                      var toilet = _toilets[index];
-                      String toiletId = toilet['id'];
-                      LatLng toiletLocation = LatLng(toilet['location'].latitude, toilet['location'].longitude);
-                      bool isFavorited = _favoriteToilets.any((fav) => fav['id'] == toiletId);
-
-                      return Card(
-                        elevation: 2,
-                        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(12),
-                          onTap: () {
-                            _mapController.animateCamera(CameraUpdate.newLatLng(toiletLocation));
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: Colors.purple.shade100,
-                                  radius: 24,
-                                  child: Icon(
-                                    Icons.wc,
-                                    color: Colors.purple.shade700,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        toilet['name'],
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.purple.shade800,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.location_on,
-                                            size: 14,
-                                            color: Colors.purple.shade400,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Expanded(
-                                            child: Text(
-                                              toilet['address'],
-                                              style: TextStyle(
-                                                color: Colors.grey.shade600,
-                                                fontSize: 14,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Row(
-                                        children: List.generate(5, (starIndex) {
-                                          return Icon(
-                                            starIndex < toilet['cleanliness'] ? Icons.star : Icons.star_border,
-                                            color: Colors.amber.shade600,
-                                            size: 16,
-                                          );
-                                        }),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Column(
-                                  children: [
-                                    IconButton(
-                                      icon: Icon(
-                                        isFavorited ? Icons.favorite : Icons.favorite_border,
-                                        color: Colors.red.shade400,
-                                      ),
-                                      onPressed: () => _toggleFavorite(toiletId, toilet),
-                                    ),
-                                    IconButton(
-                                      icon: Icon(
-                                        Icons.info_outline,
-                                        color: Colors.purple.shade400,
-                                      ),
-                                      onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ToiletDetails(
-                                              businessName: toilet['name'],
-                                              address: toilet['address'],
-                                              location: toiletLocation,
-                                              cleanliness: toilet['cleanliness'],
-                                              accessibility: toilet['accessibility'],
-                                              requiresKey: toilet['requiresKey'],
-                                              requiresPurchase: toilet['requiresPurchase'],
-                                              notes: toilet['notes'],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-      // Bottom menu
+      body: _buildPage(_currentPageIndex),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
+        currentIndex: _currentPageIndex,
         selectedItemColor: Colors.purple.shade600,
         unselectedItemColor: Colors.grey,
         items: const <BottomNavigationBarItem>[
@@ -452,24 +478,8 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
         onTap: (index) {
           setState(() {
-            _selectedIndex = index;
+            _currentPageIndex = index;
           });
-          
-          if (index == 0) {
-            // Already on home page
-          } else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const FavoritesList(),
-              ),
-            );
-          } else if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ProfilePage()),
-            );
-          }
         },
       ),
     );
