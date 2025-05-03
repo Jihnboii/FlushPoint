@@ -35,8 +35,8 @@ class _SplashPageState extends State<SplashPage> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.white,
+    return Scaffold(
+      backgroundColor: Colors.purple.shade50,
       body: Center(
         child: SplashContent(),
       ),
@@ -52,11 +52,12 @@ class SplashContent extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        const Text(
+        Text(
           'FlushPoint™',
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 32,
             fontWeight: FontWeight.bold,
+            color: Colors.purple.shade700,
           ),
         ),
         const SizedBox(height: 20),
@@ -65,6 +66,10 @@ class SplashContent extends StatelessWidget {
           width: 150,
           height: 150,
           fit: BoxFit.contain,
+        ),
+        const SizedBox(height: 20),
+        CircularProgressIndicator(
+          color: Colors.purple.shade400,
         ),
       ],
     );

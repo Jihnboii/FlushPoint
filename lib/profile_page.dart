@@ -24,12 +24,20 @@ class ProfilePage extends StatelessWidget {
           children: [
             Text(
               isGuest ? 'Guest User' : user?.displayName ?? 'User Name',
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24, 
+                fontWeight: FontWeight.bold,
+                color: Colors.purple.shade800,
+              ),
             ),
             const SizedBox(height: 8),
-            Text(isGuest ? 'No email' : user?.email ?? 'user@example.com'),
+            Text(
+              isGuest ? 'No email' : user?.email ?? 'user@example.com',
+              style: TextStyle(color: Colors.purple.shade600),
+            ),
             const SizedBox(height: 16),
             ListTile(
+              leading: Icon(Icons.settings, color: Colors.purple.shade400),
               title: const Text('Settings'),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -38,6 +46,7 @@ class ProfilePage extends StatelessWidget {
               },
             ),
             ListTile(
+              leading: Icon(Icons.info_outline, color: Colors.purple.shade400),
               title: const Text('About Us'),
               onTap: () {
                 showAboutDialog(
@@ -51,6 +60,7 @@ class ProfilePage extends StatelessWidget {
               },
             ),
             ListTile(
+              leading: Icon(Icons.feedback, color: Colors.purple.shade400),
               title: const Text('Feedback'),
               onTap: () {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -61,6 +71,7 @@ class ProfilePage extends StatelessWidget {
             const Spacer(),
             if (!isGuest)
               ListTile(
+                leading: Icon(Icons.logout, color: Colors.red),
                 title: const Text(
                   'Log Out',
                   style: TextStyle(color: Colors.red),
@@ -92,6 +103,8 @@ class ProfilePage extends StatelessWidget {
             label: 'Profile',
           ),
         ],
+        selectedItemColor: Colors.purple.shade600,
+        unselectedItemColor: Colors.grey,
         onTap: (index) {
           if (index == 0) {
             Navigator.push(

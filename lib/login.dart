@@ -69,7 +69,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -117,11 +117,12 @@ class WelcomeText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Text(
+    return Text(
       'FlushPoint™',
       style: TextStyle(
         fontSize: 22,
         fontWeight: FontWeight.bold,
+        color: Colors.purple.shade700,
       ),
     );
   }
